@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Webmail Automation">
+  <test name="Unit tests">
+    <classes>
+      <class name="com.selenium.gmail.config.ConfigTest"/>
+      <class name="com.selenium.gmail.utilities.ExcelDataReaderTest"/>
+    </classes>
+  </test>
+  <test name="UI tests">
+    <classes>
+      <class name="com.selenium.gmail.testcases.LoginTest"/>
+      <class name="com.selenium.gmail.testcases.FileUploadTest"/>
+      <class name="com.selenium.gmail.testcases.SearchMailTest"/>
+      <class name="com.selenium.gmail.testcases.LogoutTest"/>
+    </classes>
+  </test>
+</suite>
