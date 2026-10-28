@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<!--
+  Offline stand-in for Gmail used by the default test run (target=mock).
+  It mirrors the element attributes the real Gmail UI exposes (see config.properties), so the
+  same test classes run unchanged against this page or against https://mail.google.com.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mock Mail</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; background: #f6f8fc; }
+  .card { max-width: 420px; margin: 80px auto; background: #fff; padding: 32px; border-radius: 8px; }
+  .card input { display: block; width: 100%; box-sizing: border-box; padding: 10px; margin: 12px 0; }
+  .error { color: #d93025; min-height: 1em; }
+  header { display: flex; gap: 16px; align-items: center; padding: 12px 24px; background: #fff; }
+  header input { flex: 1; padding: 10px; }
+  nav { float: left; width: 200px; padding: 16px; }
+  main { margin-left: 232px; padding: 16px; }
+  [gh="cm"], [role="button"] { display: inline-block; padding: 12px 20px; background: #c2e7ff; border-radius: 16px; cursor: pointer; }
+  #compose { position: fixed; right: 24px; bottom: 0; width: 480px; background: #fff; padding: 16px; box-shadow: 0 0 8px #999; }
+  #compose input:not([type="file"]) { display: block; width: 100%; box-sizing: border-box; padding: 8px; margin: 6px 0; }
+  .chip { display: inline-block; background: #eee; padding: 4px 8px; margin: 4px 0; border-radius: 4px; }
+  #toast { position: fixed; left: 24px; bottom: 24px; background: #323232; color: #fff; padding: 12px 16px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<section id="signin" class="card" hidden>
+  <h1>Sign in</h1>
+  <div id="step-email">
+    <input id="identifierId" type="email" aria-label="Email or phone" autocomplete="off">
+    <div id="identifierNext"><button type="button">Next</button></div>
+  </div>
+  <div id="step-password" hidden>
+    <input name="Passwd" type="password" aria-label="Enter your password">
+    <div id="passwordNext"><button type="button">Next</button></div>
+  </div>
+  <p class="error" id="signin-error"></p>
+</section>
+
+<section id="app" hidden>
+  <header>
+    <strong>Mock Mail</strong>
+    <input name="q" aria-label="Search mail" placeholder="Search mail">
+    <button type="button" aria-label="Search mail">Search</button>
+    <span id="account"></span>
+  </header>
+  <nav>
+    <div gh="cm">Compose</div>
+    <p><a href="#inbox">Inbox</a></p>
+  </nav>
+  <main id="content"><h2>Inbox</h2><p>Welcome! Your inbox is empty.</p></main>
+
+  <div id="compose" hidden>
+    <strong>New Message</strong>
+    <input aria-label="To recipients" placeholder="To">
+    <input name="subjectbox" placeholder="Subject">
+    <input type="file" name="Filedata" style="display:none" multiple>
+    <div id="attachments"></div>
+    <p class="error" id="compose-error"></p>
+    <div role="button" data-tooltip="Send (Ctrl-Enter)">Send</div>
+  </div>
+  <div id="toast" hidden></div>
+</section>
+
+<script>
+  const $ = sel => document.querySelector(sel);
+  const SESSION_KEY = 'mockmail.user';
+
+  if (new URLSearchParams(location.search).has('logout')) {
+    sessionStorage.removeItem(SESSION_KEY);
+  }
+
+  function render() {
+    const user = sessionStorage.getItem(SESSION_KEY);
+    $('#signin').hidden = !!user;
+    $('#app').hidden = !user;
+    if (user) {
+      $('#account').textContent = user;
+      if (!location.hash) location.hash = '#inbox';
+      route();
+    }
+  }
+
+  function route() {
+    const m = location.hash.match(/^#search\/(.*)$/);
+    $('#content').innerHTML = '';
+    const h2 = document.createElement('h2');
+    const p = document.createElement('p');
+    if (m) {
+      h2.textContent = 'Search results for "' + decodeURIComponent(m[1]) + '"';
+      p.textContent = 'No messages matched your search.';
+    } else {
+      h2.textContent = 'Inbox';
+      p.textContent = 'Welcome! Your inbox is empty.';
+    }
+    $('#content').append(h2, p);
+  }
+
+  $('#identifierNext button').addEventListener('click', () => {
+    const email = $('#identifierId').value.trim();
+    if (!/^[^@\s]+@[^@\s]+$/.test(email)) {
+      $('#signin-error').textContent = 'Enter a valid email';
+      return;
+    }
+    $('#signin-error').textContent = '';
+    $('#step-email').hidden = true;
+    $('#step-password').hidden = false;
+  });
+
+  $('#passwordNext button').addEventListener('click', () => {
+    if (!$('input[name="Passwd"]').value) {
+      $('#signin-error').textContent = 'Enter a password';
+      return;
+    }
+    sessionStorage.setItem(SESSION_KEY, $('#identifierId').value.trim());
+    render();
+  });
+
+  $('header button').addEventListener('click', () => {
+    const q = $('input[name="q"]').value.trim();
+    if (q) location.hash = '#search/' + encodeURIComponent(q);
+  });
+
+  $('[gh="cm"]').addEventListener('click', () => {
+    $('#compose').hidden = false;
+    $('#toast').hidden = true;
+  });
+
+  $('input[name="Filedata"]').addEventListener('change', e => {
+    for (const file of e.target.files) {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = file.name + ' (' + file.size + ' bytes)';
+      $('#attachments').append(chip);
+    }
+  });
+
+  $('#compose [role="button"]').addEventListener('click', () => {
+    if (!$('#compose input[aria-label="To recipients"]').value.trim()) {
+      $('#compose-error').textContent = 'Please specify at least one recipient.';
+      return;
+    }
+    $('#compose').hidden = true;
+    $('#compose input[aria-label="To recipients"]').value = '';
+    $('#compose input[name="subjectbox"]').value = '';
+    $('#attachments').innerHTML = '';
+    $('#compose-error').textContent = '';
+    $('#toast').textContent = 'Message sent';
+    $('#toast').hidden = false;
+  });
+
+  window.addEventListener('hashchange', () => sessionStorage.getItem(SESSION_KEY) && route());
+  render();
+</script>
+</body>
+</html>
