@@ -9,6 +9,16 @@ It automates the core mail flows (log in, search, compose with an attachment and
 ships with a local **mock mailbox** that mirrors Gmail's page structure. The whole suite therefore runs
 offline and in CI with one command, and the same tests can be pointed at the real Gmail.
 
+## Demo
+
+The UI suite driving the mock mailbox in Chrome (login, data-driven search, compose with attachment, logout):
+
+![Test run demo](docs/demo.gif)
+
+Every run produces an ExtentReports HTML report with per-step screenshots:
+
+![ExtentReports test report](docs/report.png)
+
 ## Quick start
 
 Requirements: **Java 17+** and **Google Chrome**. Maven is not required; the included wrapper downloads it.
